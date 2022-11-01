@@ -42,6 +42,29 @@ def test_mktmps_pathlib_dir_fd():
                 f2_basename = Path(f2.name).name
                 assert stat.S_ISREG(os.lstat(f2_basename, dir_fd=dir_fd).st_mode)
                 assert f1_basename != f2_basename
-
         os.close(dir_fd)
 
+def test_link():
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+        dpath = Path(tmpdirname)
+        assert dpath.is_dir()
+        dir_fd = os.open(tmpdirname, os.O_RDONLY)
+        os.mknod("t.1", dir_fd=dir_fd)
+        os.mknod("t.2", dir_fd=dir_fd)
+        assert sorted(os.listdir(dpath)) == ["t.1", "t.2"]
+        sr1 = os.lstat("t.1", dir_fd=dir_fd)
+        sr2 = os.lstat("t.2", dir_fd=dir_fd)
+        assert stat.S_ISREG(sr1.st_mode)
+        assert stat.S_ISREG(sr2.st_mode)
+        assert sr1.st_nlink == 1
+        assert sr2.st_nlink == 1
+        assert sr1.st_ino != sr2.st_ino
+        os.remove("t.2", dir_fd=dir_fd)
+        with pytest.raises(FileNotFoundError):
+            sr2 = os.lstat("t.2", dir_fd=dir_fd)
+        assert sorted(os.listdir(dpath)) == ["t.1"]
+        os.link("t.1", "t.2", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        sr2 = os.lstat("t.2", dir_fd=dir_fd)
+        assert sr1.st_ino == sr2.st_ino
+        assert sorted(os.listdir(dpath)) == ["t.1", "t.2"]
+        os.close(dir_fd)
