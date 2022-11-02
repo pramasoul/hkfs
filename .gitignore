@@ -130,3 +130,7 @@ dmypy.json
 
 # emacs backup files
 *~
+
+# pyproject cruft
+\#*#
+.#*
