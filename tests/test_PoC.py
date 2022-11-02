@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 def test_mktmps():
+    # Make a tmp directory containing two tmp files
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
         status = os.lstat(tmpdirname)
         assert stat.S_ISDIR(status.st_mode)
@@ -17,6 +18,7 @@ def test_mktmps():
                 assert f1.name != f2.name
 
 def test_mktmps_pathlib():
+    # Make a tmp directory containing two tmp files, using pathlib
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
         dpath = Path(tmpdirname)
         assert dpath.is_dir()
@@ -31,6 +33,7 @@ def test_mktmps_pathlib():
 
 
 def test_mktmps_pathlib_dir_fd():
+    # Make a tmp directory containing two tmp files, using a dir_fd directory reference
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
         dpath = Path(tmpdirname)
         assert dpath.is_dir()
@@ -45,6 +48,7 @@ def test_mktmps_pathlib_dir_fd():
         os.close(dir_fd)
 
 def test_link():
+    # Make a hard link
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
         dpath = Path(tmpdirname)
         assert dpath.is_dir()
@@ -64,7 +68,31 @@ def test_link():
             sr2 = os.lstat("t.2", dir_fd=dir_fd)
         assert sorted(os.listdir(dpath)) == ["t.1"]
         os.link("t.1", "t.2", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        sr1 = os.lstat("t.1", dir_fd=dir_fd)
         sr2 = os.lstat("t.2", dir_fd=dir_fd)
         assert sr1.st_ino == sr2.st_ino
+        assert sr1.st_nlink == sr2.st_nlink == 2
         assert sorted(os.listdir(dpath)) == ["t.1", "t.2"]
         os.close(dir_fd)
+
+def test_link_2():
+    # Make a hard link to a file and verify contents
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+        dpath = Path(tmpdirname)
+        assert dpath.is_dir()
+        dir_fd = os.open(tmpdirname, os.O_RDONLY)
+        with open(dpath / "t.1", 'w') as f:
+            f.write("This is t.1\n")
+        sr1 = os.lstat("t.1", dir_fd=dir_fd)
+        assert stat.S_ISREG(sr1.st_mode)
+        assert sr1.st_nlink == 1
+        os.link("t.1", "t.2", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        sr1 = os.lstat("t.1", dir_fd=dir_fd)
+        sr2 = os.lstat("t.2", dir_fd=dir_fd)
+        assert sr1.st_ino == sr2.st_ino
+        assert sr1.st_nlink == sr2.st_nlink == 2
+        assert sorted(os.listdir(dpath)) == ["t.1", "t.2"]
+        with open(dpath / "t.2") as f:
+            assert f.read() == "This is t.1\n"
+        os.close(dir_fd)
+
