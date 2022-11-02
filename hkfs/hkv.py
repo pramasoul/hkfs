@@ -6,6 +6,8 @@
 # * Contents are immutable
 # * Can delete but not alter
 
+import os
+
 # In[12]:
 
 
@@ -43,14 +45,18 @@ from pathlib import Path
 import hashlib
 
 class FHK_CRD(HK_CRD):
-    def __init__(self, dir):
+    def __init__(self, dir, hashfun=None):
         self.d = Path(dir)
+        if hashfun:
+            self.hashfun = hashfun
+        else:
+            self.hashfun = lambda x: hashlib.sha256(x).digest()
         self.max_read_len = 1<<31
         #self.d.mkdir(parents=True, exist_ok=True)
         self.buf_len = 1<<20
         
     def key(self, data):
-        return hashlib.sha256(data).digest()
+        return self.hashfun(data)
 
     def key_from_file(f, file):
         file.seek(0,0)
@@ -77,7 +83,7 @@ class FHK_CRD(HK_CRD):
     
     def _dir_and_path_from_key(self, key):
         # Here is where the file system structure is determined for the KV store
-        assert(len(key) == 32)
+        assert(len(key) >= 4)
         encoded_key = self._encode_key(key)
         dir = self.d / encoded_key[:2] / encoded_key[2:4]
         return dir, dir / encoded_key
@@ -92,3 +98,7 @@ class FHK_CRD(HK_CRD):
             f.seek(offset)
             rv = f.read(len)
         return rv
+
+    def delete(self, key):
+        _, file_path = self._dir_and_path_from_key(key)
+        os.remove(file_path)
