@@ -96,3 +96,33 @@ def test_link_2():
             assert f.read() == "This is t.1\n"
         os.close(dir_fd)
 
+def test_link_ro():
+    # If one of two hard-linked files is read-only, what is enforced?
+    # Answer: they're all then read-only
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+        dpath = Path(tmpdirname)
+        dir_fd = os.open(tmpdirname, os.O_RDONLY)
+        with open(dpath / "t.1", 'w') as f:
+            f.write("This is t.1\n")
+        sr1 = os.lstat("t.1", dir_fd=dir_fd)
+        assert stat.S_ISREG(sr1.st_mode)
+        assert sr1.st_nlink == 1
+        os.link("t.1", "t.2", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        with open(dpath / "t.2") as f:
+            assert f.read() == "This is t.1\n"
+        os.chmod("t.2", stat.S_IREAD, dir_fd=dir_fd)
+        with pytest.raises(PermissionError):
+            with open(dpath / "t.1", 'w') as f:
+                f.write("This is an attempted write of the writeable file\n")
+        with open(dpath / "t.2") as f:
+            assert f.read() == "This is t.1\n"
+        # This is because there's only one file, and the inode holds all but the namne:
+        assert os.lstat("t.1", dir_fd=dir_fd) == os.lstat("t.2", dir_fd=dir_fd)
+        os.chmod("t.2", stat.S_IREAD | stat.S_IWRITE, dir_fd=dir_fd)
+        with open(dpath / "t.1", 'w') as f:
+            f.write("This is an attempted write of the writeable file\n")
+        with open(dpath / "t.2") as f:
+            assert f.read() == "This is an attempted write of the writeable file\n"
+
+        os.close(dir_fd)
+
