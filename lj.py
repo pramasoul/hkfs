@@ -10,16 +10,19 @@ from pathlib import Path
 class LJ():
     def __init__(self, directory):
         self.d = Path(directory)
-        self.dh = os.open(str(Path(directory)), os.O_RDONLY)
+        #self.dh = os.open(str(Path(directory)), os.O_RDONLY)
         self.h = blake3
         self.buf_len = 1<<20
 
     def assimilate(self, f):
         key = self.key_from_file(f)
         dir_path, file_path = self._dir_and_path_from_key(key)
+        f_path = os.path.realpath(f.name)
         if file_path.exists():
             # replace f with link
-            #TODO
+            # TODO: make safer
+            os.remove(f.name)
+            os.link(str(file_path), f_path)
             return "linked"
         dir_path.mkdir(parents=True, exist_ok=True)
         # link f into hash pile

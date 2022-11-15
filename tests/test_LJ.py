@@ -33,29 +33,65 @@ def test_LJ_key_from_file():
             assert urlsafe_b64decode(path.name + '==') == k
 
 def test_LJ_assimilate():
-    from base64 import urlsafe_b64decode
-    # get a hash key from a file contents
-    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
-        lj = LJ(tmpdirname)
-        with tempfile.NamedTemporaryFile(dir=tmpdirname) as f1:
-            f1.write(b"foo")
-            f1.seek(0)
-            k1 = lj.key_from_file(f1)
-            f1.seek(0)
-            with tempfile.NamedTemporaryFile(dir=tmpdirname) as f2:
-                f2.write(b"bar")
-                f2.seek(0)
-                k2 = lj.key_from_file(f2)
-                f2.seek(0)
-                with tempfile.NamedTemporaryFile(dir=tmpdirname) as f3:
-                    f3.write(b"foo")
-                    f3.seek(0)
-                    k3 = lj.key_from_file(f3)
-                    f3.seek(0)
-                    assert k1 == k3
-                    assert k1 != k2
-                    assert lj.assimilate(f1) == "added"
-                    assert lj.assimilate(f2) == "added"
-                    assert lj.assimilate(f3) == "linked"
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as hashdirname:
+        lj = LJ(hashdirname)
+        with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+            with tempfile.NamedTemporaryFile(dir=tmpdirname) as f1:
+                f1.write(b"foo")
+                f1.seek(0)
+                k1 = lj.key_from_file(f1)
+                f1.seek(0)
+                with tempfile.NamedTemporaryFile(dir=tmpdirname) as f2:
+                    f2.write(b"bar")
+                    f2.seek(0)
+                    k2 = lj.key_from_file(f2)
+                    f2.seek(0)
+                    with tempfile.NamedTemporaryFile(dir=tmpdirname) as f3:
+                        f3.write(b"foo")
+                        f3.seek(0)
+                        k3 = lj.key_from_file(f3)
+                        f3.seek(0)
+                        assert k1 == k3
+                        assert k1 != k2
+                        assert len(os.listdir(hashdirname)) == 0
+                        assert sorted(os.path.join(tmpdirname, n) for n in os.listdir(tmpdirname)) \
+                            == sorted([f1.name, f2.name, f3.name])
+                        assert lj.assimilate(f1) == "added"
+                        assert len(os.listdir(hashdirname)) == 1
+                        assert sorted(os.path.join(tmpdirname, n) for n in os.listdir(tmpdirname)) \
+                            == sorted([f1.name, f2.name, f3.name])
+                        assert lj.assimilate(f2) == "added"
+                        assert len(os.listdir(hashdirname)) == 2
+                        assert sorted(os.path.join(tmpdirname, n) for n in os.listdir(tmpdirname)) \
+                            == sorted([f1.name, f2.name, f3.name])
+                        assert lj.assimilate(f3) == "linked"
+                        assert len(os.listdir(hashdirname)) == 2
+                        assert sorted(os.path.join(tmpdirname, n) for n in os.listdir(tmpdirname)) \
+                            == sorted([f1.name, f2.name, f3.name])
                     
+def test_LJ_assimilate_2():
+    contents_by_filename = {"t.1": "foo", "t.2": "bar", "t.3": "foo"}
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as hashdirname:
+        lj = LJ(hashdirname)
+        with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+            for fname, contents in contents_by_filename.items():
+                with open(os.path.join(tmpdirname, fname), 'w') as f:
+                    f.write(contents)
+            assert len(os.listdir(hashdirname)) == 0
+            assert sorted(os.listdir(tmpdirname)) == sorted(contents_by_filename.keys())
+
+            with open(os.path.join(tmpdirname, "t.1"), 'rb') as f:
+                assert lj.assimilate(f) == "added"
+            assert len(os.listdir(hashdirname)) == 1
+            assert sorted(os.listdir(tmpdirname)) == sorted(contents_by_filename.keys())
+
+            with open(os.path.join(tmpdirname, "t.2"), 'rb') as f:
+                assert lj.assimilate(f) == "added"
+            assert len(os.listdir(hashdirname)) == 2
+            assert sorted(os.listdir(tmpdirname)) == sorted(contents_by_filename.keys())
+
+            with open(os.path.join(tmpdirname, "t.3"), 'rb') as f:
+                assert lj.assimilate(f) == "linked"
+            assert len(os.listdir(hashdirname)) == 2
+            assert sorted(os.listdir(tmpdirname)) == sorted(contents_by_filename.keys())
                     

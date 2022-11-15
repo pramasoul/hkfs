@@ -14,10 +14,12 @@ disk inflation.
 * Never lose data
 * Never lose metadata
 * Make backup of the archive straightforward and efficient
+* Fast
 
 ## Approach
 * Use hard links
 * Hash file contents
+** use blake3
 * Maintain a directory tree of all the files, named by hash value
 * Prevent changing file contents
 * Maintain a directory tree of human-readable names
@@ -33,3 +35,6 @@ disk inflation.
 * Find files in a directory tree that are not also somewhere else
 * Find the orphan hash tree files (ones no longer referenced in the human-readable tree)
 * Backup the archive
+
+## Questions
+* What window bugs
