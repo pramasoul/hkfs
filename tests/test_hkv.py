@@ -35,6 +35,21 @@ def test_create_otherhash():
         hk.delete(k1)
         assert not hk.exists(k1)
 
+def test_create_blake3():
+    from blake3 import blake3
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+        hk = HK(tmpdirname, hashfun = lambda x: blake3(x).digest())
+        k1 = hk.create(b"foo")
+        assert hk.exists(k1)
+        assert hk.read(k1) == b"foo"
+        k2 = hk.create(b"bar")
+        assert k1 != k2
+        assert hk.exists(k2)
+        assert hk.read(k1) == b"foo"
+        assert hk.read(k2) == b"bar"
+        hk.delete(k1)
+        assert not hk.exists(k1)
+
 def test_create_many():
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
         hk = HK(tmpdirname, hashfun = lambda x: hashlib.blake2b(x).digest())
