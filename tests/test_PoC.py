@@ -96,6 +96,19 @@ def test_link_2():
             assert f.read() == "This is t.1\n"
         os.close(dir_fd)
 
+def test_link_3():
+    # Can we replace an existing open file with a hard link? no
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+        dpath = Path(tmpdirname)
+        dir_fd = os.open(tmpdirname, os.O_RDONLY)
+        with open(dpath / "t.1", 'w') as f:
+            f.write("This is t.1\n")
+        with open(dpath / "t.2", 'w') as f:
+            f.write("This is t.2\n")
+        with pytest.raises(FileExistsError):
+            os.link("t.1", "t.2", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        os.close(dir_fd)
+
 def test_link_ro():
     # If one of two hard-linked files is read-only, what is enforced?
     # Answer: they're all then read-only
