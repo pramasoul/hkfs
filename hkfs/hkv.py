@@ -53,14 +53,16 @@ class FHK_CRD(HK_CRD):
             self.hashfun = lambda x: hashlib.sha256(x).digest()
         self.max_read_len = 1<<31
         #self.d.mkdir(parents=True, exist_ok=True)
+        # ^^^ No, require the directory already to exist
         self.buf_len = 1<<20
         
     def key(self, data):
         return self.hashfun(data)
 
+    # This doesn't really work with arbitrary hashfun
     def key_from_file(f, file):
         file.seek(0,0)
-        h = hashlib.sha256()
+        h = self.hashfun
         b = file.read(self.buf_len)
         while b:
             h.update(b)
