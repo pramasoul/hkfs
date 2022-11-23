@@ -14,7 +14,7 @@ class LJ():
         self.h = blake3
         self.buf_len = 1<<20
 
-    def assimilate(self, f):
+    def _assimilate(self, f):
         key = self.key_from_file(f)
         dir_path, file_path = self._dir_and_path_from_key(key)
         f_path = os.path.realpath(f.name)
@@ -23,13 +23,18 @@ class LJ():
             # TODO: make safer
             os.remove(f.name)
             os.link(str(file_path), f_path)
-            return "linked"
+            return "linked", key
         dir_path.mkdir(parents=True, exist_ok=True)
         # link f into hash pile
         os.link(f.name, str(file_path))
         #return f"linked {f.name} to {file_path}"
-        return "added"
+        return "added", key
 
+    def assimilate(self, f):
+        return self._assimilate(f)[0]
+
+    def assimilate_tell_key(self, f):
+        return self._assimilate(f)[1]
 
     def exists(self, key):
         return self._path_from_key(key).exists()

@@ -4,6 +4,8 @@ import os
 import stat
 import tempfile
 
+from base64 import urlsafe_b64decode
+from blake3 import blake3
 from pathlib import Path
 
 from lj import LJ
@@ -74,11 +76,14 @@ def test_LJ_assimilate_2():
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as hashdirname:
         lj = LJ(hashdirname)
         with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+            # create test files
             for fname, contents in contents_by_filename.items():
                 with open(os.path.join(tmpdirname, fname), 'w') as f:
                     f.write(contents)
             assert len(os.listdir(hashdirname)) == 0
             assert sorted(os.listdir(tmpdirname)) == sorted(contents_by_filename.keys())
+
+            # Assimilate one-by-one and check at each step
 
             with open(os.path.join(tmpdirname, "t.1"), 'rb') as f:
                 assert lj.assimilate(f) == "added"
@@ -94,4 +99,34 @@ def test_LJ_assimilate_2():
                 assert lj.assimilate(f) == "linked"
             assert len(os.listdir(hashdirname)) == 2
             assert sorted(os.listdir(tmpdirname)) == sorted(contents_by_filename.keys())
+
+
+def test_LJ_assimilate_with_key():
+    contents_by_filename = {"t.1": "foo", "t.2": "bar", "t.3": "foo"}
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as hashdirname:
+        lj = LJ(hashdirname)
+        with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+            # create test files
+            for fname, contents in contents_by_filename.items():
+                with open(os.path.join(tmpdirname, fname), 'w') as f:
+                    f.write(contents)
+            assert len(os.listdir(hashdirname)) == 0
+            assert sorted(os.listdir(tmpdirname)) == sorted(contents_by_filename.keys())
+
+            # Assimilate one-by-one and check keys
+
+            with open(os.path.join(tmpdirname, "t.1"), 'rb') as f:
+                # verify equal to result of echo -n foo | b3sum
+                assert lj.assimilate_tell_key(f).hex() == \
+                    "04e0bb39f30b1a3feb89f536c93be15055482df748674b00d26e5a75777702e9"
+
+            with open(os.path.join(tmpdirname, "t.2"), 'rb') as f:
+                # verify equal to result of echo -n bar | b3sum
+                assert lj.assimilate_tell_key(f).hex() == \
+                    "f2e897eed7d206cd855d441598fa521abc75aa96953e97c030c9612c30c1293d"
+
+            with open(os.path.join(tmpdirname, "t.3"), 'rb') as f:
+                # verify equal to result of echo -n foo | b3sum
+                assert lj.assimilate_tell_key(f).hex() == \
+                    "04e0bb39f30b1a3feb89f536c93be15055482df748674b00d26e5a75777702e9"
                     
