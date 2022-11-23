@@ -11,6 +11,7 @@ class LJ():
     def __init__(self, directory):
         self.d = Path(directory)
         #self.dh = os.open(str(Path(directory)), os.O_RDONLY)
+        self.post_assimilation = lambda name, sk: True
         self.h = blake3
         self.buf_len = 1<<20
 
@@ -62,3 +63,11 @@ class LJ():
     def _path_from_key(self, key):
         _, rv = self._dir_and_path_from_key(key)
         return rv
+
+    def assimilate_tree(self, dirname):
+        paf = self.post_assimilation
+        for root, dirs, files in os.walk(dirname):
+            directory = Path(root)
+            for name in files:
+                with open(directory / name, 'rb') as f:
+                    paf(name, self._assimilate(f))
