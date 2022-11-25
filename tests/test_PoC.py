@@ -139,3 +139,53 @@ def test_link_ro():
 
         os.close(dir_fd)
 
+# Explore pytest fixtures
+
+@pytest.fixture
+def one():
+    return 1
+
+def test_fixture_1(one):
+    assert one == 1
+
+@pytest.fixture
+def tmpdirname():
+    with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
+        yield tmpdirname
+
+def test_tmpdir(tmpdirname):
+    status = os.lstat(tmpdirname)
+    assert stat.S_ISDIR(status.st_mode)
+    with tempfile.NamedTemporaryFile(dir=tmpdirname) as f1:
+        assert stat.S_ISREG(os.lstat(f1.name).st_mode)
+        with tempfile.NamedTemporaryFile(dir=tmpdirname) as f2:
+            assert stat.S_ISREG(os.lstat(f2.name).st_mode)
+            assert f1.name != f2.name
+
+@pytest.fixture
+def tmpfile1(tmpdirname):
+    with tempfile.NamedTemporaryFile(dir=tmpdirname) as f:
+        yield f
+
+def test_tmpdir_2(tmpdirname, tmpfile1):
+    status = os.lstat(tmpdirname)
+    assert stat.S_ISDIR(status.st_mode)
+    f1 = tmpfile1
+    assert stat.S_ISREG(os.lstat(f1.name).st_mode)
+    with tempfile.NamedTemporaryFile(dir=tmpdirname) as f2:
+        assert stat.S_ISREG(os.lstat(f2.name).st_mode)
+        assert f1.name != f2.name
+
+@pytest.fixture
+def tmpfile2(tmpdirname):
+    with tempfile.NamedTemporaryFile(dir=tmpdirname) as f:
+        yield f
+
+def test_tmpdir_3(tmpdirname, tmpfile1, tmpfile2):
+    status = os.lstat(tmpdirname)
+    assert stat.S_ISDIR(status.st_mode)
+    f1 = tmpfile1
+    assert stat.S_ISREG(os.lstat(f1.name).st_mode)
+    f2 = tmpfile2
+    assert stat.S_ISREG(os.lstat(f2.name).st_mode)
+    assert f1.name != f2.name
