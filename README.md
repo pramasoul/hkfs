@@ -24,6 +24,12 @@ disk inflation.
 * Prevent changing file contents
 * Maintain a directory tree of human-readable names
 ** from the ingest names, as subsequently rearranged and altered
+* Make it easy to find files and subtrees that are duplicated elsewhere
+** Useful: file stat gives number of hard links to inode
+** Useful: depth-first subtree walk can construct a hash-of-hashes to represent a directory node
+*** Wherever those match, the subtrees match as to file contents and tree structure (not necessarily permissions)
+*** Want an efficient way to associate an inode with a hash, as well as a hash with an inode
+
 
 ## Operations
 * Ingest from directory tree
@@ -35,6 +41,28 @@ disk inflation.
 * Find files in a directory tree that are not also somewhere else
 * Find the orphan hash tree files (ones no longer referenced in the human-readable tree)
 * Backup the archive
+
+### Internal Functions
+*
+
+
+## Databases
+* File contents from hash key
+** In the filesystem, in a subtree with names constructed from the hash values
+*** viz. LJ in lj.py
+* Hash from inode
+** Use: associating hashes to nodes of archive file tree
+** Construct or re-construct by scan of hash subtree
+** Update with assimilations
+** Remove deletions
+* File paths from inode
+** Construct or re-construct by scan of archive subtree
+** Update with assimilations
+** Update with deletions
+
+# Hints
+* os.stat(f.fileno())
+
 
 ## Questions
 * What window bugs
