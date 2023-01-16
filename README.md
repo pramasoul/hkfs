@@ -53,6 +53,7 @@ disk inflation.
 * Hash from inode
 ** Use: associating hashes to nodes of archive file tree
 ** Construct or re-construct by scan of hash subtree
+*** Or can re-hash the inode contents
 ** Update with assimilations
 ** Remove deletions
 * File paths from inode
@@ -62,7 +63,7 @@ disk inflation.
 
 # Hints
 * os.stat(f.fileno())
-
+* sqlite is safe with multiple processes if used right, viz. https://rbranson.medium.com/sharing-sqlite-databases-across-containers-is-surprisingly-brilliant-bacb8d753054
 
 ## Questions
-* What window bugs
+* What window bugs arise

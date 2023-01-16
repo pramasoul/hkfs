@@ -17,18 +17,18 @@ class LJ():
 
     def _assimilate(self, f):
         key = self.key_from_file(f)
-        dir_path, file_path = self._dir_and_path_from_key(key)
-        f_path = os.path.realpath(f.name)
-        if file_path.exists():
+        hashdir_path, hashfile_path = self._dir_and_path_from_key(key)
+        real_f_path = os.path.realpath(f.name) # FIXME: is this necessary?
+        if hashfile_path.exists():
             # replace f with link
             # TODO: make safer
             os.remove(f.name)
-            os.link(str(file_path), f_path)
+            os.link(str(hashfile_path), real_f_path)
             return "linked", key
-        dir_path.mkdir(parents=True, exist_ok=True)
+        hashdir_path.mkdir(parents=True, exist_ok=True)
         # link f into hash pile
-        os.link(f.name, str(file_path))
-        #return f"linked {f.name} to {file_path}"
+        os.link(f.name, str(hashfile_path))
+        #return f"linked {f.name} to {hashfile_path}"
         return "added", key
 
     def assimilate(self, f):

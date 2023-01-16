@@ -35,7 +35,7 @@ def test_create_otherhash():
         hk.delete(k1)
         assert not hk.exists(k1)
 
-def test_create_blake3():
+def test_create_using_blake3():
     from blake3 import blake3
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
         hk = HK(tmpdirname, hashfun = lambda x: blake3(x).digest())
