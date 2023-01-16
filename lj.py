@@ -8,10 +8,10 @@ from pathlib import Path
 
 
 class LJ():
-    def __init__(self, directory):
+    def __init__(self, directory, post_assimilation=lambda name, sk: True):
         self.d = Path(directory)
         #self.dh = os.open(str(Path(directory)), os.O_RDONLY)
-        self.post_assimilation = lambda name, sk: True
+        self.post_assimilation = post_assimilation
         self.h = blake3
         self.buf_len = 1<<20
 
@@ -19,17 +19,22 @@ class LJ():
         key = self.key_from_file(f)
         hashdir_path, hashfile_path = self._dir_and_path_from_key(key)
         real_f_path = os.path.realpath(f.name) # FIXME: is this necessary?
+        hashfile_path_str = str(hashfile_path)
         if hashfile_path.exists():
             # replace f with link
             # TODO: make safer
             os.remove(f.name)
-            os.link(str(hashfile_path), real_f_path)
-            return "linked", key
-        hashdir_path.mkdir(parents=True, exist_ok=True)
-        # link f into hash pile
-        os.link(f.name, str(hashfile_path))
-        #return f"linked {f.name} to {hashfile_path}"
-        return "added", key
+            os.link(hashfile_path_str, real_f_path)
+            what = "linked"
+        else:
+            hashdir_path.mkdir(parents=True, exist_ok=True)
+            # link f into hash pile
+            os.link(f.name, str(hashfile_path))
+            #return f"linked {f.name} to {hashfile_path}"
+            what = "added"
+        status = os.lstat(hashfile_path_str)
+        inode = status.st_ino
+        return what, key, inode
 
     def assimilate(self, f):
         return self._assimilate(f)[0]

@@ -149,13 +149,10 @@ def test_LJ_assimilate_tree():
 def test_LJ_assimilate_tree_log():
     contents_by_filename = {"t.1": "foo", "t.2": "bar", "t.3": "foo"}
     with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as hashdirname:
-        lj = LJ(hashdirname)
-
-        # FIXME: monkeypatch
         results = []
         def record_result(name, res):
             results.append((name, res))
-        lj.post_assimilation = record_result
+        lj = LJ(hashdirname, record_result)
 
         with tempfile.TemporaryDirectory(prefix="/roto/tmp/") as tmpdirname:
             # create test files
